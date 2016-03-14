@@ -1,5 +1,7 @@
 from bs4 import BeautifulSoup 
 from time import sleep 
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 import pandas as pd 
 import requests
 import re
@@ -8,6 +10,8 @@ import os
 titles=['data scientist','data engineer','data analyst','business analyst','business intelligence engineer','research scientist','statistician','business intelligence analyst','machine learning engineer']
 
 baseurl='http://www.indeed.com/jobs'
+
+datadir = '/Users/chelsyxie/Desktop/dsjobs/search_data'
 
 total=[]
 
@@ -28,21 +32,74 @@ for title in titles:
     
     # Salaries
 
-    s_div = soup.find('div', {'id': 'SALARY_rbo'})
-    s_li = s_div.findAll('li')
-    xlab = []
-    yfreq = []
+    s_li = soup.find('div', {'id': 'SALARY_rbo'}).findAll('li')
+    
+    # Handle hidden list
+    if len(s_li)==0:
+        browser = webdriver.Firefox()
+        browser.get(this_titl.url)
+        try:
+            elem = browser.find_element_by_xpath('//*[@id="SALARY_rbo"]/ul')
+        except NoSuchElementException:
+            elem = browser.find_element_by_xpath('//*[@id="rb_Salary Estimate"]/div/span')
+            elem.click()
+            sleep(0.2)
+            elem = browser.find_element_by_xpath('//*[@id="SALARY_rbo"]/ul')
+
+        subSoup = BeautifulSoup(elem.get_attribute("outerHTML"),"html.parser")
+        s_li = subSoup.findAll('li')
+    
+    xtag = []
+    counts = []
     
     for s in s_li:
-        xlab.append(s.a.text.strip().encode('utf-8'))
+        xtag.append(s.a.text.strip().encode('utf-8'))
         s.a.extract()
-        yfreq.append(int(re.search(r"\d+", s.text).group(0)))
+        counts.append(int(re.search(r"\d+", s.text).group(0)))
     
     
-    salaries = pd.DataFrame({'Salary Estimate':xlab,'Counts':yfreq})
+    salaries = pd.DataFrame({'Salary Estimate':xtag,'Counts':counts})
     
     filename = '_'.join(title.split())+'_sal.csv'
-    filename = os.path.join('/Users/chelsyx/Documents/Projects/indeed_dsjobs/search_data',filename)
+    filename = os.path.join(datadir,filename)
     salaries.to_csv(filename, sep=',', index=False)
     
+    # Location
+
+    l_li = soup.find('div', {'id': 'LOCATION_rbo'}).findAll('li')
+    
+    # Handle hidden list
+    if len(l_li)==0:
+        browser = webdriver.Firefox()
+        browser.get(this_titl.url)
+        try:
+            elem = browser.find_element_by_xpath('//*[@id="LOCATION_rbo"]/ul')
+        except NoSuchElementException:
+            elem = browser.find_element_by_xpath('//*[@id="rb_Location"]/div/span')
+            elem.click()
+            sleep(0.2)
+            elem = browser.find_element_by_xpath('//*[@id="LOCATION_rbo"]/ul')
+
+        subSoup = BeautifulSoup(elem.get_attribute("outerHTML"),"html.parser")
+        l_li = subSoup.findAll('li')
+    
+    xtag = []
+    counts = []
+    
+    for l in l_li:
+        xtag.append(l.a.text.strip().encode('utf-8'))
+        l.a.extract()
+        counts.append(int(re.search(r"\d+", l.text).group(0)))
+    
+    
+    locations = pd.DataFrame({'Location':xtag,'Counts':counts})
+    
+    filename = '_'.join(title.split())+'_loc.csv'
+    filename = os.path.join(datadir,filename)
+    locations.to_csv(filename, sep=',', index=False)
+    
     sleep(1)
+  
+    
+titlCnts = pd.DataFrame({'Title':titles,'Counts':total})
+titlCnts.to_csv(os.path.join(datadir, 'title_counts.csv'), sep=',', index=False)
