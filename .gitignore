@@ -1,0 +1,6 @@
+.DS_Store
+**/search_data/
+
+# History files
+.Rhistory
+.Rapp.history
