@@ -48,6 +48,7 @@ for title in titles:
 
         subSoup = BeautifulSoup(elem.get_attribute("outerHTML"),"html.parser")
         s_li = subSoup.findAll('li')
+        browser.quit()
     
     xtag = []
     counts = []
@@ -82,6 +83,7 @@ for title in titles:
 
         subSoup = BeautifulSoup(elem.get_attribute("outerHTML"),"html.parser")
         l_li = subSoup.findAll('li')
+        browser.quit()
     
     xtag = []
     counts = []
